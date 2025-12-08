@@ -3,9 +3,9 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "package"
+name = "el"
 version = "1.0.0"
-description = "python library/binary template package"
+description = "the ai"
 authors = [
   {name = "prajesh", email = "prajesh.eleven118@gmail.com"}
 ]
@@ -17,8 +17,8 @@ readme = "README.md"
 dependencies = []
 
 [project.scripts]
-package = "package.main"
+el = "el.main:main"
 
 [project.urls]
-bugs = "https://github.com/pr4j3sh/python/issues"
-homepage = "https://github.com/pr4j3sh/python"
+bugs = "https://github.com/pr4j3sh/el/issues"
+homepage = "https://github.com/pr4j3sh/el"

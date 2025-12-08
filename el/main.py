@@ -1,4 +1,4 @@
-from package.greet import greet
+from el.greet import greet
 
 
 def main():
