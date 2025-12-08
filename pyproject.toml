@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "package"
+version = "1.0.0"
+description = "python library/binary template package"
+authors = [
+  {name = "prajesh", email = "prajesh.eleven118@gmail.com"}
+]
+maintainers = [
+  {name = "prajesh", email = "prajesh.eleven118@gmail.com"}
+]
+license = {file = "LICENSE"}
+readme = "README.md"
+dependencies = []
+
+[project.scripts]
+package = "package.main"
+
+[project.urls]
+bugs = "https://github.com/pr4j3sh/python/issues"
+homepage = "https://github.com/pr4j3sh/python"
