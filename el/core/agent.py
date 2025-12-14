@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import List
 
 from el.core.dispatcher import Dispatcher
-from el.core.executor import Executor, CommandResult
+from el.core.executor import ExecutionPolicy, Executor, CommandResult
 
 
 class Agent:
@@ -19,8 +20,13 @@ class Agent:
     This layer will later integrate with the LLM.
     """
 
-    def __init__(self) -> None:
-        self._executor = Executor()
+    def __init__(self, policy: ExecutionPolicy | None = None) -> None:
+        if policy is None:
+            policy = ExecutionPolicy(
+                allowed_commands={"ls", "cat", "pwd", "whoami"},
+                working_directory=Path.home(),
+            )
+        self._executor = Executor(policy)
         self._dispatcher = Dispatcher(self._executor)
 
     def run_shell_command(self, command: List[str]) -> CommandResult:

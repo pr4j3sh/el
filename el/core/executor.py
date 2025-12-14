@@ -2,7 +2,19 @@ from __future__ import annotations
 
 import subprocess
 from dataclasses import dataclass
-from typing import List
+from typing import List, Set, Optional
+from pathlib import Path
+
+
+@dataclass(frozen=True)
+class ExecutionPolicy:
+    """
+    Defines what the executor is allowed to do.
+    """
+
+    allowed_commands: Set[str]
+    working_directory: Path
+    timeout_seconds: int = 10
 
 
 @dataclass
@@ -28,6 +40,14 @@ class CommandExecutionError(Exception):
     pass
 
 
+class CommandNotAllowedError(CommandExecutionError):
+    """
+    Raised when a command is not allowed.
+    """
+
+    pass
+
+
 class Executor:
     """
     Centralized, safe command execution layer.
@@ -39,8 +59,8 @@ class Executor:
     - No privilege escalation
     """
 
-    def __init__(self, timeout: int = 10) -> None:
-        self._timeout = timeout
+    def __init__(self, policy: ExecutionPolicy) -> None:
+        self._policy = policy
 
     def run(self, command: List[str]) -> CommandResult:
         """
@@ -55,12 +75,21 @@ class Executor:
         Raises:
             CommandExecutionError
         """
+        if not command:
+            raise ValueError("Command cannot be empty")
+
+        binary = Path(command[0]).name
+
+        if binary not in self._policy.allowed_commands:
+            raise CommandNotAllowedError(f"Command {binary} is not allowed")
+
         try:
             completed = subprocess.run(
                 command,
+                cwd=self._policy.working_directory,
                 capture_output=True,
                 text=True,
-                timeout=self._timeout,
+                timeout=self._policy.timeout_seconds,
                 check=False,
             )
 
