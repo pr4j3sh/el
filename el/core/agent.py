@@ -5,6 +5,7 @@ from typing import List
 
 from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
+from el.db.sqlite import SQLiteExectionLogger
 
 
 class Agent:
@@ -28,6 +29,9 @@ class Agent:
             )
         self._executor = Executor(policy)
         self._dispatcher = Dispatcher(self._executor)
+        self._logger = SQLiteExectionLogger(
+            db_path=Path.home() / ".el_execution_log.db"
+        )
 
     def run_shell_command(self, command: List[str]) -> CommandResult:
         """
@@ -39,4 +43,8 @@ class Agent:
         Returns:
             CommandResult
         """
-        return self._dispatcher.dispatch(action="shell", payload=command)
+        result = self._dispatcher.dispatch(action="shell", payload=command)
+
+        self._logger.log(result)
+
+        return result
