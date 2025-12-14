@@ -3,12 +3,12 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Tuple
 
 from el.core.executor import CommandResult
 
 
-class SQLiteExectionLogger:
+class SQLiteExecutionLogger:
     """
     Persists command execution history to SQLite.
     """
@@ -61,3 +61,16 @@ class SQLiteExectionLogger:
                     int(result.timed_out),
                 ),
             )
+
+    def fetch_recent(self, limit: int = 10) -> List[Tuple]:
+        with sqlite3.connect(self._db_path) as conn:
+            cursor = conn.execute(
+                """
+                SELECT timestamp, command, return_code
+                FROM execution_log
+                ORDER BY id DESC
+                LIMIT ?
+                """,
+                (limit,),
+            )
+            return cursor.fetchall()

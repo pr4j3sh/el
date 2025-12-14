@@ -31,6 +31,11 @@ class CLI:
             self._print_usage()
             sys.exit(1)
 
+        if argv[1] == "history":
+            records = self._agent.get_history()
+            for ts, cmd, rc in records:
+                print(f"{ts} | {cmd} | {rc}")
+            return
         command = argv[1:]
         result = self._agent.run_shell_command(command)
         self._render_result(result)

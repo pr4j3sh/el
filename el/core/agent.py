@@ -5,7 +5,7 @@ from typing import List
 
 from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
-from el.db.sqlite import SQLiteExectionLogger
+from el.db.sqlite import SQLiteExecutionLogger
 
 
 class Agent:
@@ -29,7 +29,7 @@ class Agent:
             )
         self._executor = Executor(policy)
         self._dispatcher = Dispatcher(self._executor)
-        self._logger = SQLiteExectionLogger(
+        self._logger = SQLiteExecutionLogger(
             db_path=Path.home() / ".el_execution_log.db"
         )
 
@@ -48,3 +48,6 @@ class Agent:
         self._logger.log(result)
 
         return result
+
+    def get_history(self):
+        return self._dispatcher.dispatch("history", None)

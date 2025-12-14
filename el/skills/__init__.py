@@ -1,1 +1,1 @@
-from el.skills import shell
+from el.skills import shell, history
