@@ -1,8 +1,10 @@
-from el.greet import greet
+import sys
+from el.cli import CLI
 
 
-def main():
-    print(greet("frames"))
+def main() -> None:
+    CLI().run(sys.argv)
+
 
 if __name__ == "__main__":
     main()

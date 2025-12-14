@@ -17,7 +17,7 @@ readme = "README.md"
 dependencies = []
 
 [project.scripts]
-el = "el.main:main"
+package = "el.main:main"
 
 [project.urls]
 bugs = "https://github.com/pr4j3sh/el/issues"

@@ -1,0 +1,14 @@
+{
+  "name": "el",
+  "version": "1.0.0",
+  "description": "the ai",
+  "main": "index.js",
+  "scripts": {
+    "install": "pip -r install requirements.txt",
+    "start": "python -m el.main",
+    "dev": "python -m el.main"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
