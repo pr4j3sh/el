@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional, List, Tuple
 from dataclasses import dataclass
 
+from el.config.consts import HISTORY_RECORDS_LIMIT
 from el.core.executor import CommandResult
 
 
@@ -70,7 +71,9 @@ class SQLiteExecutionLogger:
                 ),
             )
 
-    def fetch_recent(self, limit: int = 10) -> List[ExecutionLogRecord]:
+    def fetch_recent(
+        self, limit: int = HISTORY_RECORDS_LIMIT
+    ) -> List[ExecutionLogRecord]:
         with sqlite3.connect(self._db_path) as conn:
             rows = conn.execute(
                 """

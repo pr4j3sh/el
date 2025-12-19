@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
 
+from el.config.consts import HISTORY_RECORDS_LIMIT
+
 
 class BaseRequest(BaseModel):
     """
@@ -19,4 +21,4 @@ class ShellRequest(BaseRequest):
 
 class HistoryRequest(BaseRequest):
     action: Literal["history"] = "history"
-    limit: int = Field(default=10, ge=1, le=100)
+    limit: int = Field(default=HISTORY_RECORDS_LIMIT, ge=1, le=100)

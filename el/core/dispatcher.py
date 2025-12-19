@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
+from el.config.consts import LOG_FILE
 from el.core.executor import CommandResult, Executor
 from el.db.sqlite import SQLiteExecutionLogger
 from el.models.request import BaseRequest, HistoryRequest, ShellRequest
@@ -20,9 +21,7 @@ class Dispatcher:
     """
 
     def __init__(self, executor: Executor) -> None:
-        self._logger = SQLiteExecutionLogger(
-            db_path=Path.home() / ".el_execution_log.db"
-        )
+        self._logger = SQLiteExecutionLogger(db_path=Path.home() / LOG_FILE)
         self._skills = self._register_skills(executor)
 
     def _register_skills(self, executor: Executor) -> Dict[str, object]:

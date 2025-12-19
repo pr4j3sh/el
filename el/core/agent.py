@@ -5,6 +5,7 @@ from typing import List
 
 from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
+from el.config.consts import ALLOWED_COMMANDS, HISTORY_RECORDS_LIMIT, LOG_FILE
 from el.db.sqlite import SQLiteExecutionLogger
 from el.models.request import HistoryRequest, ShellRequest
 
@@ -25,14 +26,12 @@ class Agent:
     def __init__(self, policy: ExecutionPolicy | None = None) -> None:
         if policy is None:
             policy = ExecutionPolicy(
-                allowed_commands={"ls", "cat", "pwd", "whoami"},
+                allowed_commands=ALLOWED_COMMANDS,
                 working_directory=Path.home(),
             )
         self._executor = Executor(policy)
         self._dispatcher = Dispatcher(self._executor)
-        self._logger = SQLiteExecutionLogger(
-            db_path=Path.home() / ".el_execution_log.db"
-        )
+        self._logger = SQLiteExecutionLogger(db_path=Path.home() / LOG_FILE)
 
     def run_shell_command(self, command: List[str]):
         """
@@ -50,5 +49,5 @@ class Agent:
 
         return result
 
-    def get_history(self, limit: int = 10):
+    def get_history(self, limit: int = HISTORY_RECORDS_LIMIT):
         return self._dispatcher.dispatch(HistoryRequest(limit=limit))
