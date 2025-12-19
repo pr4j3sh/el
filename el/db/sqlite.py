@@ -4,8 +4,16 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Tuple
+from dataclasses import dataclass
 
 from el.core.executor import CommandResult
+
+
+@dataclass(frozen=True)
+class ExecutionLogRecord:
+    timestamp: str
+    command: str
+    return_code: int
 
 
 class SQLiteExecutionLogger:
@@ -62,9 +70,9 @@ class SQLiteExecutionLogger:
                 ),
             )
 
-    def fetch_recent(self, limit: int = 10) -> List[Tuple]:
+    def fetch_recent(self, limit: int = 10) -> List[ExecutionLogRecord]:
         with sqlite3.connect(self._db_path) as conn:
-            cursor = conn.execute(
+            rows = conn.execute(
                 """
                 SELECT timestamp, command, return_code
                 FROM execution_log
@@ -72,5 +80,8 @@ class SQLiteExecutionLogger:
                 LIMIT ?
                 """,
                 (limit,),
-            )
-            return cursor.fetchall()
+            ).fetchall()
+            return [
+                ExecutionLogRecord(timestamp=ts, command=cmd, return_code=rc)
+                for ts, cmd, rc in rows
+            ]

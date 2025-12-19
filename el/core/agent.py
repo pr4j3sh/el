@@ -6,6 +6,7 @@ from typing import List
 from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
 from el.db.sqlite import SQLiteExecutionLogger
+from el.models.request import HistoryRequest, ShellRequest
 
 
 class Agent:
@@ -33,7 +34,7 @@ class Agent:
             db_path=Path.home() / ".el_execution_log.db"
         )
 
-    def run_shell_command(self, command: List[str]) -> CommandResult:
+    def run_shell_command(self, command: List[str]):
         """
         Execute a shell command via the shell skill.
 
@@ -43,11 +44,11 @@ class Agent:
         Returns:
             CommandResult
         """
-        result = self._dispatcher.dispatch(action="shell", payload=command)
+        result = self._dispatcher.dispatch(ShellRequest(command=command))
 
         self._logger.log(result)
 
         return result
 
-    def get_history(self):
-        return self._dispatcher.dispatch("history", None)
+    def get_history(self, limit: int = 10):
+        return self._dispatcher.dispatch(HistoryRequest(limit=limit))

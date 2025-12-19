@@ -5,6 +5,8 @@ from typing import Dict, List
 
 from el.core.executor import CommandResult, Executor
 from el.db.sqlite import SQLiteExecutionLogger
+from el.models.request import BaseRequest, HistoryRequest, ShellRequest
+from el.models.response import HistoryRecord, HistoryResponse, ShellResponse
 from el.skills.history import HistorySkill
 from el.skills.shell import ShellSkill
 
@@ -29,7 +31,7 @@ class Dispatcher:
         """
         return {"shell": ShellSkill(executor), "history": HistorySkill(self._logger)}
 
-    def dispatch(self, action: str, payload: List[str] | None) -> CommandResult:
+    def dispatch(self, request: BaseRequest):
         """
         Dispatch an action to the correct skill.
 
@@ -40,8 +42,32 @@ class Dispatcher:
         Returns:
             CommandResult
         """
-        if action not in self._skills:
-            raise ValueError(f"Unknown action: {action}")
+        if request.action == "shell":
+            req = ShellRequest.model_validate(request)
+            result = self._skills["shell"].run(req.command)
+            return ShellResponse(
+                success=True,
+                command=result.command,
+                return_code=result.return_code,
+                stdout=result.stdout,
+                stderr=result.stderr,
+                timed_out=result.timed_out,
+            )
 
-        skill = self._skills[action]
-        return skill.run(payload) if action == "shell" else skill.run()
+        if request.action == "history":
+            req = HistoryRequest.model_validate(request)
+            records = self._skills["history"].run(req.limit)
+
+            return HistoryResponse(
+                success=True,
+                records=[
+                    HistoryRecord(
+                        timestamp=r.timestamp,
+                        command=r.command,
+                        return_code=r.return_code,
+                    )
+                    for r in records
+                ],
+            )
+
+        raise ValueError(f"Unknown action: {request.action}")
