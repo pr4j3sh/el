@@ -24,3 +24,14 @@ class HistoryRecord(BaseModel):
 
 class HistoryResponse(BaseResponse):
     records: List[HistoryRecord]
+
+
+class PortProcess(BaseModel):
+    protocol: str
+    pid: int | None
+    process: str | None
+
+
+class PortInspectResponse(BaseResponse):
+    port: int
+    processes: list[PortProcess]

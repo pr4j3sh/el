@@ -22,3 +22,8 @@ class ShellRequest(BaseRequest):
 class HistoryRequest(BaseRequest):
     action: Literal["history"] = "history"
     limit: int = Field(default=HISTORY_RECORDS_LIMIT, ge=1, le=100)
+
+
+class PortInspectRequest(BaseRequest):
+    action: Literal["port"] = "port"
+    port: int = Field(..., ge=1, le=65535)

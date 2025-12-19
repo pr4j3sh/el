@@ -37,6 +37,15 @@ class CLI:
             for r in res.records:
                 print(f"{r.timestamp} | {r.command} | {r.return_code}")
             return
+
+        if argv[1] == "port":
+            port = int(argv[2])
+            resp = self._agent.inspect_port(port)
+
+            for p in resp.processes:
+                print(f"{p.protocol} | pid={p.pid} | {p.process}")
+            return
+
         command = argv[1:]
         result = self._agent.run_shell_command(command)
         self._render_result(result)

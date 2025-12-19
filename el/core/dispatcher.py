@@ -6,9 +6,20 @@ from typing import Dict, List
 from el.config.consts import LOG_FILE
 from el.core.executor import CommandResult, Executor
 from el.db.sqlite import SQLiteExecutionLogger
-from el.models.request import BaseRequest, HistoryRequest, ShellRequest
-from el.models.response import HistoryRecord, HistoryResponse, ShellResponse
+from el.models.request import (
+    BaseRequest,
+    HistoryRequest,
+    PortInspectRequest,
+    ShellRequest,
+)
+from el.models.response import (
+    HistoryRecord,
+    HistoryResponse,
+    PortInspectResponse,
+    ShellResponse,
+)
 from el.skills.history import HistorySkill
+from el.skills.network import NetworkSkill
 from el.skills.shell import ShellSkill
 
 
@@ -28,7 +39,11 @@ class Dispatcher:
         """
         Register all available skills here.
         """
-        return {"shell": ShellSkill(executor), "history": HistorySkill(self._logger)}
+        return {
+            "shell": ShellSkill(executor),
+            "history": HistorySkill(self._logger),
+            "network": NetworkSkill(executor),
+        }
 
     def dispatch(self, request: BaseRequest):
         """
@@ -67,6 +82,16 @@ class Dispatcher:
                     )
                     for r in records
                 ],
+            )
+
+        if request.action == "port":
+            req = PortInspectRequest.model_validate(request)
+            procs = self._skills["network"].inspect_port(req.port)
+
+            return PortInspectResponse(
+                success=True,
+                port=req.port,
+                processes=procs,
             )
 
         raise ValueError(f"Unknown action: {request.action}")

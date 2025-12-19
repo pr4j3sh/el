@@ -7,7 +7,7 @@ from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
 from el.config.consts import ALLOWED_COMMANDS, HISTORY_RECORDS_LIMIT, LOG_FILE
 from el.db.sqlite import SQLiteExecutionLogger
-from el.models.request import HistoryRequest, ShellRequest
+from el.models.request import HistoryRequest, PortInspectRequest, ShellRequest
 
 
 class Agent:
@@ -51,3 +51,6 @@ class Agent:
 
     def get_history(self, limit: int = HISTORY_RECORDS_LIMIT):
         return self._dispatcher.dispatch(HistoryRequest(limit=limit))
+
+    def inspect_port(self, port: int):
+        return self._dispatcher.dispatch(PortInspectRequest(port=port))
