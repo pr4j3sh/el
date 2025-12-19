@@ -63,6 +63,20 @@ class CLI:
         if result.timed_out:
             print("Command timed out", file=sys.stderr)
 
+    def converse(self):
+        while True:
+            try:
+                text = input("el> ").strip()
+                if not text:
+                    continue
+
+                result = self._agent.handle_input(text)
+                print(result)
+
+            except KeyboardInterrupt:
+                print("\nbye")
+                break
+
     @staticmethod
     def _print_usage() -> None:
         print("Usage: el <command> [args...]")

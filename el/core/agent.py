@@ -7,6 +7,8 @@ from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
 from el.config.consts import ALLOWED_COMMANDS, HISTORY_RECORDS_LIMIT, LOG_FILE
 from el.db.sqlite import SQLiteExecutionLogger
+from el.llm.client import LLMClient
+from el.llm.schemas import LLMRequest
 from el.models.request import HistoryRequest, PortInspectRequest, ShellRequest
 
 
@@ -31,6 +33,7 @@ class Agent:
             )
         self._executor = Executor(policy)
         self._dispatcher = Dispatcher(self._executor)
+        self._llm = LLMClient()
         self._logger = SQLiteExecutionLogger(db_path=Path.home() / LOG_FILE)
 
     def run_shell_command(self, command: List[str]):
@@ -54,3 +57,17 @@ class Agent:
 
     def inspect_port(self, port: int):
         return self._dispatcher.dispatch(PortInspectRequest(port=port))
+
+    def handle_input(self, text: str):
+        """
+        Conversational entrypoint.
+        """
+        request = self._llm.generate(
+            user_input=text,
+            schema=LLMRequest,
+        )
+
+        if request.action == "noop":
+            return {"message": "I don't know how to do that yet."}
+
+        return self._dispatcher.dispatch(request)

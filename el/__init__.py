@@ -1,1 +1,1 @@
-from el import config, core, db, models, skills, cli
+from el import config, core, db, models, skills, cli, llm
