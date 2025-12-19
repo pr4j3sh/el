@@ -4,6 +4,8 @@
   "description": "the ai",
   "main": "index.js",
   "scripts": {
+    "venv": "python -m venv .venv",
+    "vact": "source .venv/bin/activate",
     "install": "pip -r install requirements.txt",
     "start": "python -m el.main",
     "dev": "python -m el.main"
