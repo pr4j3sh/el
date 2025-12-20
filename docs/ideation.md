@@ -1,3 +1,5 @@
+# Ideation
+
 You’re aiming for a local “system-level AI agent” with real execution power — basically a CLI assistant that can inspect, change, and orchestrate your Arch/i3 environment like an admin with superpowers.
 
 Here’s the high-level blueprint that works cleanly and safely on Linux, and fits how devs build these things today:
