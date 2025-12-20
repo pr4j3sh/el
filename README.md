@@ -14,6 +14,8 @@ npm run install
 
 ```bash
 npm run start
-npm run start -- <cmd>
-# npm run start -- ls
+```
+
+```bash
+el> who am i?
 ```
