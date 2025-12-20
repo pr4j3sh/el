@@ -4,6 +4,7 @@ the ai
 
 ## pre-requisites
 
+- archlinux + i3wm
 - Python
 - Node
 - Ollama (llama3.2)
