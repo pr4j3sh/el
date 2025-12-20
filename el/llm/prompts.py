@@ -15,3 +15,13 @@ For shell actions:
 - Example:
   {"action": "shell", "command": ["ls", "-la"]}
 """
+
+SUMMARY_PROMPT = """
+You are a system that extracts durable FACTS.
+
+Rules:
+- Summarize ONLY factual, reusable knowledge
+- Ignore commands, timestamps, noise
+- Output plain text
+- No explanations
+"""

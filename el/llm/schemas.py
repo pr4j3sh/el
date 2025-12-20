@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import List, Literal, Union
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -21,6 +21,10 @@ class ShellLLMRequest(BaseModel):
 class PortLLMRequest(BaseModel):
     action: Literal["port"]
     port: int = Field(..., ge=1, le=65535)
+
+
+class FactExtractionRequest(BaseModel):
+    facts: List[str]
 
 
 # This is the union the LLM is allowed to emit

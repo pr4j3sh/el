@@ -6,7 +6,7 @@ import subprocess
 from pydantic import BaseModel, ValidationError, TypeAdapter
 
 from el.llm.prompts import SYSTEM_PROMPT
-from el.llm.schemas import LLMRequest
+from el.llm.schemas import FactExtractionRequest, LLMRequest
 
 
 class LLMError(Exception):
@@ -30,12 +30,7 @@ class LLMClient:
         self._model = model
         self._timeout = timeout
 
-    def generate(
-        self,
-        user_input: str,
-        schema: LLMRequest,
-        capabilities: str,
-    ) -> BaseModel:
+    def generate(self, user_input: str, schema: LLMRequest, context: str) -> BaseModel:
         """
         Convert user input into a structured request.
 
@@ -45,7 +40,7 @@ class LLMClient:
         prompt = f"""
 {SYSTEM_PROMPT}
 
-{capabilities}
+{context}
 
 User input:
 {user_input}
@@ -64,6 +59,9 @@ User input:
             raise LLMError(f"Ollama execution failed: {e}") from e
 
         stdout = completed.stdout.strip()
+        print("=================prompt===================")
+        print(prompt)
+        print("=================output===================")
         print(stdout)
 
         if not stdout:
@@ -86,3 +84,60 @@ User input:
             return adapter.validate_python(data)
         except ValidationError as e:
             raise LLMError(f"Schema validation failed:\n{e}") from e
+
+    def extract_facts(self, user_input: str, output: str) -> list[str]:
+        prompt = f"""
+Extract durable facts worth remembering.
+
+Rules:
+- Only stable facts
+- No commands
+- No transient output
+- If none, return empty list
+
+User input:
+{user_input}
+
+Output:
+{output}
+
+Return JSON:
+{{ "facts": [] }}
+"""
+
+        completed = subprocess.run(
+            ["ollama", "run", self._model],
+            input=prompt,
+            text=True,
+            capture_output=True,
+            timeout=self._timeout,
+            check=False,
+        )
+
+        stdout = completed.stdout.strip()
+        lines = [l for l in stdout.splitlines() if l.strip().startswith("{")]
+        if not lines:
+            return []
+
+        data = json.loads(lines[-1])
+        req = FactExtractionRequest.model_validate(data)
+        return req.facts
+
+    def generate_text(self, prompt: str) -> str:
+        try:
+            completed = subprocess.run(
+                ["ollama", "run", self._model],
+                input=prompt,
+                text=True,
+                capture_output=True,
+                timeout=self._timeout,
+                check=False,
+            )
+        except Exception as e:
+            raise LLMError(f"Ollama execution failed: {e}") from e
+
+        stdout = completed.stdout.strip()
+        if not stdout:
+            raise LLMError("LLM returned empty output")
+
+        return stdout
