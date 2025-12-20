@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List
+from el.core.capability import Capability
 from el.core.executor import Executor
 from el.models.response import PortProcess
 
@@ -9,6 +10,12 @@ class NetworkSkill:
     """
     Network inspection skill (ports, listeners).
     """
+
+    CAPABILITY = Capability(
+        name="port",
+        description="Inspect what process is listening on a port",
+        arguments={"port": "integer (1-65535)"},
+    )
 
     def __init__(self, executor: Executor) -> None:
         self._executor = executor

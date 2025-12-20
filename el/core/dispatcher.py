@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from el.config.consts import LOG_FILE
+from el.core.capability import Capability
 from el.core.executor import CommandResult, Executor
 from el.db.sqlite import SQLiteExecutionLogger
 from el.models.request import (
@@ -57,7 +58,7 @@ class Dispatcher:
             CommandResult
         """
         if request.action == "shell":
-            req = ShellRequest.model_validate(request)
+            req = ShellRequest.model_validate(request.model_dump())
             result = self._skills["shell"].run(req.command)
             return ShellResponse(
                 success=True,
@@ -69,7 +70,7 @@ class Dispatcher:
             )
 
         if request.action == "history":
-            req = HistoryRequest.model_validate(request)
+            req = HistoryRequest.model_validate(request.model_dump())
             records = self._skills["history"].run(req.limit)
 
             return HistoryResponse(
@@ -85,7 +86,7 @@ class Dispatcher:
             )
 
         if request.action == "port":
-            req = PortInspectRequest.model_validate(request)
+            req = PortInspectRequest.model_validate(request.model_dump())
             procs = self._skills["network"].inspect_port(req.port)
 
             return PortInspectResponse(
@@ -95,3 +96,13 @@ class Dispatcher:
             )
 
         raise ValueError(f"Unknown action: {request.action}")
+
+    def capabilities(self) -> list[Capability]:
+        caps: list[Capability] = []
+
+        for skill in self._skills.values():
+            cap = getattr(skill.__class__, "CAPABILITY", None)
+            if cap:
+                caps.append(cap)
+
+        return caps

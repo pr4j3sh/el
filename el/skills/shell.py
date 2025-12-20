@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List
 
+from el.core.capability import Capability
 from el.core.executor import CommandResult, Executor
 
 
@@ -16,6 +17,12 @@ class ShellSkill:
 
     It only validates and delegates.
     """
+
+    CAPABILITY = Capability(
+        name="shell",
+        description="Execute a simple shell command",
+        arguments={"command": "list of strings (command and args)"},
+    )
 
     def __init__(self, executor: Executor) -> None:
         self._executor = executor

@@ -7,9 +7,10 @@ from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
 from el.config.consts import ALLOWED_COMMANDS, HISTORY_RECORDS_LIMIT, LOG_FILE
 from el.db.sqlite import SQLiteExecutionLogger
-from el.llm.client import LLMClient
-from el.llm.schemas import LLMRequest
+from el.llm.client import LLMClient, LLMError
+from el.llm.schemas import LLMRequest, NoOpRequest
 from el.models.request import HistoryRequest, PortInspectRequest, ShellRequest
+from el.models.response import AgentResponse
 
 
 class Agent:
@@ -62,12 +63,39 @@ class Agent:
         """
         Conversational entrypoint.
         """
-        request = self._llm.generate(
-            user_input=text,
-            schema=LLMRequest,
-        )
+        capabilities = self._build_capability_context()
+
+        try:
+            request = self._llm.generate(
+                user_input=text, schema=LLMRequest, capabilities=capabilities
+            )
+
+        except LLMError:
+            # Deterministic fallback for non-actionable input
+            request = NoOpRequest(action="noop")
 
         if request.action == "noop":
-            return {"message": "I don't know how to do that yet."}
+            return AgentResponse(
+                success=True,
+                message="I don't know how to do that yet.",
+            )
 
-        return self._dispatcher.dispatch(request)
+        command_result = self._dispatcher.dispatch(request)
+
+        return AgentResponse(
+            success=True,
+            result=command_result,
+        )
+
+    def _build_capability_context(self) -> str:
+        """
+        Build a human-readable capability manifest for the LLM.
+        """
+        lines = ["Available actions:"]
+
+        for cap in self._dispatcher.capabilities():
+            lines.append(f"- {cap.name}: {cap.description}")
+            for arg, desc in cap.arguments.items():
+                lines.append(f"    - {arg}: {desc}")
+
+        return "\n".join(lines)

@@ -70,8 +70,29 @@ class CLI:
                 if not text:
                     continue
 
-                result = self._agent.handle_input(text)
-                print(result)
+                response = self._agent.handle_input(text)
+
+                if response.message:
+                    print(response.message)
+                    continue
+
+                if not response.result:
+                    print("No result")
+                    continue
+
+                # Shell
+                if hasattr(response.result, "stdout"):
+                    self._render_result(response.result)
+
+                # History
+                elif hasattr(response.result, "records"):
+                    for r in response.result.records:
+                        print(f"{r.timestamp} | {r.command} | {r.return_code}")
+
+                # Port
+                elif hasattr(response.result, "processes"):
+                    for p in response.result.processes:
+                        print(f"{p.protocol} | pid={p.pid} | {p.process}")
 
             except KeyboardInterrupt:
                 print("\nbye")

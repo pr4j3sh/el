@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional, Union
 from pydantic import BaseModel
 
 
@@ -35,3 +35,15 @@ class PortProcess(BaseModel):
 class PortInspectResponse(BaseResponse):
     port: int
     processes: list[PortProcess]
+
+
+class AgentResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+    result: Optional[
+        Union[
+            ShellResponse,
+            HistoryResponse,
+            PortInspectResponse,
+        ]
+    ] = None

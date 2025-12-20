@@ -6,7 +6,7 @@ the ai
 
 ```bash
 npm run venv
-npm run vact
+source .venv/bin/activate
 npm run install
 ```
 

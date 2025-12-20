@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 import subprocess
-from pydantic import TypeAdapter
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, TypeAdapter
 
 from el.llm.prompts import SYSTEM_PROMPT
+from el.llm.schemas import LLMRequest
 
 
 class LLMError(Exception):
@@ -33,7 +33,8 @@ class LLMClient:
     def generate(
         self,
         user_input: str,
-        schema: Type[BaseModel],
+        schema: LLMRequest,
+        capabilities: str,
     ) -> BaseModel:
         """
         Convert user input into a structured request.
@@ -43,6 +44,8 @@ class LLMClient:
         """
         prompt = f"""
 {SYSTEM_PROMPT}
+
+{capabilities}
 
 User input:
 {user_input}
@@ -60,7 +63,18 @@ User input:
         except Exception as e:
             raise LLMError(f"Ollama execution failed: {e}") from e
 
-        raw = completed.stdout.strip().splitlines()[-1]
+        stdout = completed.stdout.strip()
+        print(stdout)
+
+        if not stdout:
+            raise LLMError("LLM returned empty output")
+
+        lines = [l for l in stdout.splitlines() if l.strip().startswith("{")]
+
+        if not lines:
+            raise LLMError(f"No JSON object found in LLM output:\n{stdout}")
+
+        raw = lines[-1]
 
         try:
             data = json.loads(raw)
