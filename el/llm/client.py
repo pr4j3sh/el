@@ -5,6 +5,7 @@ import subprocess
 
 from pydantic import BaseModel, ValidationError, TypeAdapter
 
+from el.config.consts import LLM_MODEL, LLM_TIMEOUT
 from el.llm.prompts import SYSTEM_PROMPT
 from el.llm.schemas import FactExtractionRequest, LLMRequest
 
@@ -24,8 +25,8 @@ class LLMClient:
 
     def __init__(
         self,
-        model: str = "llama3.2",
-        timeout: int = 30,
+        model: str = LLM_MODEL,
+        timeout: int = LLM_TIMEOUT,
     ) -> None:
         self._model = model
         self._timeout = timeout
@@ -59,10 +60,10 @@ User input:
             raise LLMError(f"Ollama execution failed: {e}") from e
 
         stdout = completed.stdout.strip()
-        print("=================prompt===================")
-        print(prompt)
-        print("=================output===================")
-        print(stdout)
+        # print("=================prompt===================")
+        # print(prompt)
+        # print("=================output===================")
+        # print(stdout)
 
         if not stdout:
             raise LLMError("LLM returned empty output")

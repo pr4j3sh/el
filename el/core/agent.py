@@ -8,6 +8,7 @@ from el.core.dispatcher import Dispatcher
 from el.core.executor import ExecutionPolicy, Executor, CommandResult
 from el.config.consts import (
     ALLOWED_COMMANDS,
+    DESTRUCTIVE_COMMANDS,
     HISTORY_RECORDS_LIMIT,
     LOG_FILE,
     MIN_MEMORY_IMPORTANCE,
@@ -78,6 +79,19 @@ class Agent:
         """
         Conversational entrypoint.
         """
+
+        last = self._memory.all()[-1] if self._memory.all() else None
+
+        if last and last.output == "confirmation_required":
+            if text.lower() in {"yes", "y"}:
+                request = self._llm.generate(
+                    user_input=last.input,
+                    schema=LLMRequest,
+                    context=self._build_capability_context(),
+                )
+            else:
+                return AgentResponse(success=True, message="Cancelled.")
+
         capabilities = self._build_capability_context()
         memory_context = self._memory_context()
 
@@ -109,6 +123,24 @@ Recent memory:
                 return AgentResponse(
                     success=True,
                     message="I don't know how to do that yet.",
+                )
+
+            if self._requires_confirmation(request):
+                self._memory.add(
+                    MemoryRecord(
+                        timestamp=datetime.utcnow(),
+                        kind=MemoryKind.COMMAND,
+                        input=text,
+                        output="confirmation_required",
+                        success=False,
+                        importance=MemoryImportance.COMMAND,
+                        ttl=MemoryTTL.COMMAND,
+                    )
+                )
+
+                return AgentResponse(
+                    success=False,
+                    message=f"Confirm execution: {' '.join(request.command)} (yes/no)",
                 )
 
             command_result = self._dispatcher.dispatch(request)
@@ -165,7 +197,7 @@ Recent memory:
             )
             return AgentResponse(
                 success=False,
-                message="LLM failed to process input.",
+                message=f"LLM failed to process input:\n\t{str(e)}",
             )
 
         except Exception as e:
@@ -182,7 +214,7 @@ Recent memory:
             )
             return AgentResponse(
                 success=False,
-                message=f"Failed to process input: {str(e)}",
+                message=f"Failed to process input:\n\t{str(e)}",
             )
 
     def _build_capability_context(self) -> str:
@@ -251,3 +283,10 @@ Commands:
                 ttl=None,
             )
         )
+
+    def _requires_confirmation(self, request: LLMRequest) -> bool:
+        if request.action != "shell":
+            return False
+
+        cmd = request.command[0]
+        return cmd in DESTRUCTIVE_COMMANDS
