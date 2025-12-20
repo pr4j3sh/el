@@ -2,6 +2,12 @@
 
 the ai
 
+## pre-requisites
+
+- Python
+- Node
+- Ollama (llama3.2)
+
 ## installation
 
 ```bash
