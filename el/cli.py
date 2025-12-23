@@ -56,6 +56,8 @@ class CLI:
         """
         if result.stdout:
             print(result.stdout)
+        elif result:
+            print(result)
 
         if result.stderr:
             print(result.stderr, file=sys.stderr)
@@ -78,6 +80,19 @@ class CLI:
 
                 if not response.result:
                     print("No result")
+                    continue
+
+                # PlanResult
+                if hasattr(response.result, "goal") and hasattr(
+                    response.result, "steps"
+                ):
+                    print(f"Goal: {response.result.goal}")
+                    for i, step in enumerate(response.result.steps, 1):
+                        print(f"Step {i}:")
+                        if hasattr(step, "stdout"):
+                            print(step.stdout.strip())
+                        else:
+                            print(step)
                     continue
 
                 # Shell

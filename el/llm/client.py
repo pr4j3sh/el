@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import httpx
 import json
-import subprocess
 
 from pydantic import BaseModel, ValidationError, TypeAdapter
 
-from el.config.consts import LLM_MODEL, LLM_TIMEOUT
+from el.config.consts import BASE_URL, LLM_MODEL, LLM_TIMEOUT
 from el.llm.prompts import SYSTEM_PROMPT
 from el.llm.schemas import FactExtractionRequest, LLMRequest
 
@@ -26,9 +26,11 @@ class LLMClient:
     def __init__(
         self,
         model: str = LLM_MODEL,
+        base_url: str = BASE_URL,
         timeout: int = LLM_TIMEOUT,
     ) -> None:
         self._model = model
+        self._url = f"{base_url}/api/generate"
         self._timeout = timeout
 
     def generate(self, user_input: str, schema: LLMRequest, context: str) -> BaseModel:
@@ -47,42 +49,40 @@ User input:
 {user_input}
 """
 
+        payload = {
+            "model": self._model,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "options": {
+                "temperature": 0,
+            },
+        }
+
         try:
-            completed = subprocess.run(
-                ["ollama", "run", self._model],
-                input=prompt,
-                text=True,
-                capture_output=True,
+            resp = httpx.post(
+                self._url,
+                json=payload,
                 timeout=self._timeout,
-                check=False,
             )
+            resp.raise_for_status()
         except Exception as e:
             raise LLMError(f"Ollama execution failed: {e}") from e
 
-        stdout = completed.stdout.strip()
-        # print("=================prompt===================")
-        # print(prompt)
-        # print("=================output===================")
-        # print(stdout)
+        data = resp.json()
 
-        if not stdout:
-            raise LLMError("LLM returned empty output")
-
-        lines = [l for l in stdout.splitlines() if l.strip().startswith("{")]
-
-        if not lines:
-            raise LLMError(f"No JSON object found in LLM output:\n{stdout}")
-
-        raw = lines[-1]
+        if "response" not in data:
+            raise LLMError(f"Invalid Ollama response: {data}")
 
         try:
-            data = json.loads(raw)
+            parsed = json.loads(data["response"])
         except json.JSONDecodeError as e:
-            raise LLMError(f"Invalid JSON from LLM:\n{raw}") from e
+            raise LLMError(f"LLM returned invalid JSON:\n{data['response']}") from e
 
+        print(parsed)
         try:
             adapter = TypeAdapter(schema)
-            return adapter.validate_python(data)
+            return adapter.validate_python(parsed)
         except ValidationError as e:
             raise LLMError(f"Schema validation failed:\n{e}") from e
 
@@ -106,39 +106,38 @@ Return JSON:
 {{ "facts": [] }}
 """
 
-        completed = subprocess.run(
-            ["ollama", "run", self._model],
-            input=prompt,
-            text=True,
-            capture_output=True,
-            timeout=self._timeout,
-            check=False,
-        )
+        payload = {
+            "model": self._model,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "options": {
+                "temperature": 0,
+            },
+        }
 
-        stdout = completed.stdout.strip()
-        lines = [l for l in stdout.splitlines() if l.strip().startswith("{")]
-        if not lines:
+        try:
+            resp = httpx.post(self._url, json=payload, timeout=self._timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            raw_json = json.loads(data.get("response", "{}"))
+            req = FactExtractionRequest.model_validate(raw_json)
+            return req.facts
+        except Exception:
             return []
 
-        data = json.loads(lines[-1])
-        req = FactExtractionRequest.model_validate(data)
-        return req.facts
-
     def generate_text(self, prompt: str) -> str:
+        payload = {
+            "model": self._model,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"temperature": 0},
+        }
+
         try:
-            completed = subprocess.run(
-                ["ollama", "run", self._model],
-                input=prompt,
-                text=True,
-                capture_output=True,
-                timeout=self._timeout,
-                check=False,
-            )
+            resp = httpx.post(self._url, json=payload, timeout=self._timeout)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("response", "").strip()
         except Exception as e:
             raise LLMError(f"Ollama execution failed: {e}") from e
-
-        stdout = completed.stdout.strip()
-        if not stdout:
-            raise LLMError("LLM returned empty output")
-
-        return stdout

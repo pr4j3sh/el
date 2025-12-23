@@ -37,13 +37,20 @@ class PortInspectResponse(BaseResponse):
     processes: list[PortProcess]
 
 
-class AgentResponse(BaseModel):
-    success: bool
-    message: Optional[str] = None
-    result: Optional[
+class PlanResult(BaseModel):
+    goal: str
+    steps: list[
         Union[
             ShellResponse,
             HistoryResponse,
             PortInspectResponse,
         ]
+    ]
+
+
+class AgentResponse(BaseModel):
+    success: bool
+    message: Optional[str] = None
+    result: Optional[
+        Union[ShellResponse, HistoryResponse, PortInspectResponse, PlanResult]
     ] = None

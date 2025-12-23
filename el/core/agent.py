@@ -13,6 +13,7 @@ from el.config.consts import (
     LOG_FILE,
     MIN_MEMORY_IMPORTANCE,
 )
+from el.core.planner import Plan, Planner
 from el.db.memory import (
     MemoryImportance,
     MemoryKind,
@@ -25,7 +26,7 @@ from el.llm.client import LLMClient, LLMError
 from el.llm.prompts import SUMMARY_PROMPT
 from el.llm.schemas import LLMRequest, NoOpRequest
 from el.models.request import HistoryRequest, PortInspectRequest, ShellRequest
-from el.models.response import AgentResponse
+from el.models.response import AgentResponse, PlanResult
 
 
 class Agent:
@@ -51,6 +52,7 @@ class Agent:
         self._dispatcher = Dispatcher(self._executor)
         self._llm = LLMClient()
         self._memory = MemoryStore()
+        self._planner = Planner(self._llm)
         self._logger = SQLiteExecutionLogger(db_path=Path.home() / LOG_FILE)
 
     def run_shell_command(self, command: List[str]):
@@ -102,6 +104,25 @@ Capabilities:
 Recent memory:
 {memory_context}
         """
+
+        if self._wants_multistep(text):
+            plan = self._planner.generate_plan(
+                user_input=text,
+                context=context,
+            )
+
+            results, failed = self._execute_plan(plan)
+
+            return AgentResponse(
+                success=not failed,
+                result=PlanResult(
+                    goal=plan.goal,
+                    steps=results,
+                ),
+                message=None
+                if not failed
+                else "Plan execution stopped due to an error.",
+            )
 
         try:
             request = self._llm.generate(
@@ -195,6 +216,7 @@ Recent memory:
                     ttl=MemoryTTL.ERROR,
                 )
             )
+            raise e
             return AgentResponse(
                 success=False,
                 message=f"LLM failed to process input:\n\t{str(e)}",
@@ -212,6 +234,7 @@ Recent memory:
                     ttl=MemoryTTL.ERROR,
                 )
             )
+            raise e
             return AgentResponse(
                 success=False,
                 message=f"Failed to process input:\n\t{str(e)}",
@@ -290,3 +313,46 @@ Commands:
 
         cmd = request.command[0]
         return cmd in DESTRUCTIVE_COMMANDS
+
+    def _execute_plan(self, plan: Plan):
+        results = []
+        failed = False
+
+        for step in plan.steps:
+            try:
+                result = self._dispatcher.dispatch(step)
+                results.append(result)
+
+                self._memory.add(
+                    MemoryRecord(
+                        timestamp=datetime.utcnow(),
+                        kind=MemoryKind.COMMAND,
+                        input=str(step),
+                        output=str(result),
+                        success=True,
+                        importance=MemoryImportance.COMMAND,
+                        ttl=MemoryTTL.COMMAND,
+                    )
+                )
+
+            except Exception as e:
+                failed = True
+
+                self._memory.add(
+                    MemoryRecord(
+                        timestamp=datetime.utcnow(),
+                        kind=MemoryKind.ERROR,
+                        input=str(step),
+                        output=str(e),
+                        success=False,
+                        importance=MemoryImportance.ERROR,
+                        ttl=MemoryTTL.ERROR,
+                    )
+                )
+                break
+
+        return results, failed
+
+    def _wants_multistep(self, text: str) -> bool:
+        keywords = ["and then", "after that", "first", "then", "finally"]
+        return any(k in text.lower() for k in keywords)
